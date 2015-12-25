@@ -6,7 +6,7 @@ from tkinter import *
 
 MAXLEN = 10000
 SERVER_PORT = 3000
-USER_NAME = "abc"
+USER_NAME = "Anonymous"
 
 def message_encode(method, name, text):
 	data = "{} {} {}\r\n{}".format(method, len(text), USER_NAME, text)
@@ -76,17 +76,48 @@ def start_server():
 		server_doit(conn)
 		conn.close()
 
-remote_host, remote_port = input("Enter remote address: ").split(":")
-remote_port = int(remote_port)
-server_thread = threading.Thread(target=start_server)
-server_thread.start()
-quit = False
+class InputDialog:
+	def __init__(self, parent):
+		top = self.top = Toplevel(parent)
+
+		Label(top, text="User name").grid(row=0, column=0)
+		self.nameE = Entry(top)
+		self.nameE.insert(0, USER_NAME)
+		self.nameE.grid(row=0, column=1)
+
+		Label(top, text="Local port").grid(row=1, column=0)
+		self.localPortE = Entry(top)
+		self.localPortE.insert(0, str(SERVER_PORT))
+		self.localPortE.grid(row=1, column=1)
+
+		Label(top, text="Remote host").grid(row=2, column=0)
+		self.remoteHostE= Entry(top)
+		self.remoteHostE.grid(row=2, column=1)
+
+		Label(top, text="Remote port").grid(row=3, column=0)
+		self.remotePortE = Entry(top)
+		self.remotePortE.insert(0, str(SERVER_PORT))
+		self.remotePortE.grid(row=3, column=1)
+
+		btn = Button(top, text="OK", command=self.ok)
+		btn.grid(row=4)
+	
+	def ok(self):
+		global USER_NAME, SERVER_PORT, remote_host, remote_port
+		USER_NAME = self.nameE.get()
+		SERVER_PORT = int(self.localPortE.get())
+		remote_host = self.remoteHostE.get()
+		remote_port = int(self.remotePortE.get()) 
+		self.top.destroy()
+
 
 # build GUI
 app = Tk(className="socketChat")
 app.config(padx=10, pady=10)
-top_bar = Label(app, text=USER_NAME, font="Arial 15 bold")
+top_bar = Label(app, font="Arial 15 bold")
 top_bar.pack()
+con_bar = Label(app, font="Arial")
+con_bar.pack()
 
 middle_frame = Frame(app)
 middle_frame.pack(pady=10)
@@ -107,6 +138,16 @@ send_btn.pack()
 
 state_bar = Message(app, text="Ready to send a message.", font="Arial", background="grey", width=300, foreground="white", anchor=W)
 state_bar.pack(fill=X, expand=1)
+
+dialog = InputDialog(app)
+app.wait_window(dialog.top)
+top_bar["text"] = USER_NAME
+con_bar["text"] = "{}:{} --> {}:{}".format("127.0.0.1", SERVER_PORT, remote_host, remote_port)
+
+server_thread = threading.Thread(target=start_server, daemon=True)
+server_thread.start()
+quit = False
+
 app.mainloop()
 
 server_thread.join()
